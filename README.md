@@ -1,1 +1,1 @@
-# movie-review-sentiment-classification-with-big-data
+# Movie review sentiment classification with big data technologies
