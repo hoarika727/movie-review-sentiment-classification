@@ -1,0 +1,8 @@
+numpy
+pandas
+tensoflow
+keras
+findspark
+pyspark
+matplotlib
+wordcloud
