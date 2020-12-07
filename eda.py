@@ -32,8 +32,8 @@ import seaborn as sns
 label_count = train_df.groupBy('labels').agg(fn.count('*')).toPandas()
 label_count.columns = ['labels','count']
 
-p = plt.bar(label_count['labels'],label_count['count'], width=0.5, align='center')
-p[0].set_color('r')
+sns.set(rc={'figure.figsize':(8,6)})
+p = sns.barplot(data=label_count, x='labels',y='count',palette=['red','darkblue'])
 plt.yticks(np.arange(0, 13000, step=2000))
 plt.title('Labels Count')
 plt.show()
@@ -55,12 +55,12 @@ word_raw_freq_trim = word_raw_freq.reset_index(drop=True)
 word_raw_freq_trim = word_raw_freq_trim[:25]
 
 sns.set(rc={'figure.figsize':(15,10)})
-sns.barplot(x='words', y='count', data=word_raw_freq_trim, palette='Blues_d')
+sns.barplot(x='words', y='count', data=word_raw_freq_trim, palette='BuGn_d')
 plt.xticks(rotation=45, fontsize=15)
 plt.xlabel(xlabel="Words", fontsize=18)
 plt.yticks(fontsize=12)
 plt.ylabel(ylabel = "Count", fontsize=18)
-plt.title('Word frequency in movie reviews', fontsize=20, pad=5)
+plt.title('Word frequency in movie reviews before preprocessing', fontsize=20, pad=5)
 plt.show()
 
 #%%
@@ -73,31 +73,6 @@ stopwords_processor = StopWordsRemover() \
                       .setCaseSensitive(False)\
                       .setInputCol("words").setOutputCol("filtered_words")
 review_tokens = stopwords_processor.transform(review_raw_tokens)
-word_freq = review_tokens.withColumn("filtered_words", fn.explode(fn.col("filtered_words"))) \
-  .groupBy("filtered_words") \
-  .agg(fn.count("*")).toPandas()
-word_freq.columns = ['words','count']
-word_freq = word_freq.sort_values(by=['count'], axis=0, ascending=False)
-
-word_freq_trim = word_freq.reset_index(drop=True)
-word_freq_trim = word_freq_trim[:25]
-
-sns.set(rc={'figure.figsize':(15,10)})
-sns.barplot(x='words', y='count', data=word_freq_trim, palette='BuGn_d')
-plt.xticks(rotation=45, fontsize=15)
-plt.xlabel(xlabel="Words", fontsize=18)
-plt.yticks(fontsize=12)
-plt.ylabel(ylabel = "Count", fontsize=18)
-plt.title('Word frequency in movie reviews', fontsize=20, pad=5)
-plt.show()
-
-sns.distplot(a=np.log(word_freq['count']))
-plt.xticks(rotation=45, fontsize=15)
-plt.xlabel(xlabel="Word Frequency (logarithmic)", fontsize=18)
-plt.yticks(fontsize=12)
-plt.ylabel(ylabel = "Distribution Ratio", fontsize=18)
-plt.title('Word frequency distribution in movie reviews', fontsize=20, pad=5)
-plt.show()
 
 reviews = review_tokens.toPandas()
 word_list = ''
@@ -111,12 +86,39 @@ wordcloud = WordCloud(width = 480, height = 320,
                 min_font_size = 10).generate(word_list) 
   
 # plot the WordCloud image                        
-plt.figure(figsize = (6, 4), facecolor = 'w') 
+plt.figure(figsize = (6, 4), dpi = 320, facecolor = 'w') 
 plt.imshow(wordcloud, interpolation='bilinear') 
 plt.axis("off") 
 plt.margins(x=0, y=0)
 plt.tight_layout(pad = 0) 
 plt.show() 
+
+word_freq = review_tokens.withColumn("filtered_words", fn.explode(fn.col("filtered_words"))) \
+  .groupBy("filtered_words") \
+  .agg(fn.count("*")).toPandas()
+word_freq.columns = ['words','count']
+word_freq = word_freq.sort_values(by=['count'], axis=0, ascending=False)
+
+word_freq_trim = word_freq.reset_index(drop=True)
+word_freq_trim = word_freq_trim[:25]
+
+sns.set(rc={'figure.figsize':(15,10)})
+sns.barplot(x='words', y='count', data=word_freq_trim, palette='Greens_d')
+plt.xticks(rotation=45, fontsize=15)
+plt.xlabel(xlabel="Words", fontsize=18)
+plt.yticks(fontsize=12)
+plt.ylabel(ylabel = "Count", fontsize=18)
+plt.title('Word frequency in movie reviews after preprocessing', fontsize=20, pad=5)
+plt.show()
+
+sns.distplot(a=np.log(word_freq['count']))
+plt.xticks(rotation=45, fontsize=15)
+plt.xlabel(xlabel="Word Frequency (logarithmic)", fontsize=18)
+plt.yticks(fontsize=12)
+plt.ylabel(ylabel = "Distribution Ratio", fontsize=18)
+plt.title('Word frequency distribution in movie reviews', fontsize=20, pad=5)
+plt.show()
+
 
 #%%
 pos_train_df = train_df.where(fn.col('labels') == 1)
@@ -138,7 +140,7 @@ word_freq_pos_trim = word_freq_pos.reset_index(drop=True)
 word_freq_pos_trim = word_freq_pos_trim[:25]
 
 sns.set(rc={'figure.figsize':(15,10)})
-sns.barplot(x='words', y='count', data=word_freq_pos_trim, palette='BuGn_d')
+sns.barplot(x='words', y='count', data=word_freq_pos_trim, palette='Blues_d')
 plt.xticks(rotation=45, fontsize=15)
 plt.xlabel(xlabel="Words", fontsize=18)
 plt.yticks(fontsize=12)
@@ -164,7 +166,7 @@ word_freq_neg_trim = word_freq_neg.reset_index(drop=True)
 word_freq_neg_trim = word_freq_neg_trim[:25]
 
 sns.set(rc={'figure.figsize':(15,10)})
-sns.barplot(x='words', y='count', data=word_freq_neg_trim, palette='BuGn_d')
+sns.barplot(x='words', y='count', data=word_freq_neg_trim, palette='Reds_d')
 plt.xticks(rotation=45, fontsize=15)
 plt.xlabel(xlabel="Words", fontsize=18)
 plt.yticks(fontsize=12)
@@ -182,4 +184,7 @@ plt.show()
 #%%
 from collections import Counter
 freq = Counter(word_freq['count'])
-freq
+freq.most_common(5)
+# (Count of a word, number of word with that count): many unique words
+# Tell the text vectorization will probably return a sparse matrix 
+#[(1, 36575), (2, 11175), (3, 6128), (4, 4133), (5, 2936)]
